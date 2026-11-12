@@ -10,15 +10,15 @@ Proyek ini dirancang sebagai implementasi modul klasifikasi citra pada penelitia
 
 Terdapat **2 Model VGG16 Independen**, masing-masing memiliki 3 kelas target:
 
-### 1. Model Tas (`tas`)
-- `handbag`: Tas jinjing / tas tangan wanita
-- `sling_bag`: Tas selempang / shoulder bag / crossbody
-- `tote_bag`: Tas jinjing santai berukuran sedang-besar
+### 1. Model Tas (`tas`) — Total: 380 Gambar (Distribusi Seimbang)
+- `tote_bag` (**127 gambar**): Tas jinjing santai berukuran sedang-besar
+- `handbag` (**127 gambar**): Tas jinjing / tas tangan wanita
+- `sling_bag` (**126 gambar**): Tas selempang / shoulder bag / crossbody
 
-### 2. Model Baju (`baju`)
-- `casual_top`: Kaos (T-shirt), kemeja, blouse santai, crop top, streetwear
-- `outerwear`: Jaket, blazer, mantel, cardigan, sweater, hoodie
-- `dress`: Gaun wanita, maxi dress, skirt set, gamis pesta
+### 2. Model Baju (`baju`) — Total: 247 Gambar (Distribusi Seimbang)
+- `casual_top` (**83 gambar**): Kaos (T-shirt), kemeja, blouse santai, crop top, streetwear
+- `outerwear` (**82 gambar**): Jaket, blazer, mantel, cardigan, sweater, hoodie
+- `dress` (**82 gambar**): Gaun wanita, maxi dress, skirt set, gamis pesta
 
 ---
 
