@@ -1,14 +1,38 @@
-# Fashion Trend VGG16 Classification
+# Fashion Trend: YOLOv8 Cropping + VGG16 Classification + K-Means Color Analysis
 
-Repositori ini berisi rancangan arsitektur dan notebook pelatihan **Transfer Learning menggunakan VGG-16** untuk memprediksi dan mengklasifikasikan tren item fesyen dari media sosial.
+Repositori ini berisi rancangan arsitektur dan notebook *end-to-end* untuk memprediksi dan menganalisis tren item fesyen dari media sosial menggunakan kombinasi **YOLOv8 (Object Detection & Cropping)**, **VGG-16 (Transfer Learning Classification)**, dan **K-Means Clustering (Dominant Color Extraction)**.
 
-Proyek ini dirancang sebagai implementasi modul klasifikasi citra pada penelitian **Sistem Pakar Prediksi Tren Fashion dari Media Sosial (Universitas Udayana)**.
+Proyek ini dirancang sebagai implementasi modul analisis visual pada penelitian **Sistem Pakar Prediksi Tren Fashion dari Media Sosial (Universitas Udayana)**.
 
 ---
 
-## 🎯 Model & Label Klasifikasi
+## Alur Pipeline End-to-End (Sesuai Notebook)
 
-Terdapat **2 Model VGG16 Independen**, masing-masing memiliki 3 kelas target:
+Setiap notebook (`train_vgg16_baju.ipynb` & `train_vgg16_tas.ipynb`) menjalankan 5 tahapan terintegrasi:
+
+1. **Deteksi & Auto-Cropping Dataset dengan YOLOv8 (`yolov8n.pt`)**
+   - Setiap citra pada dataset mentah (`dataset/baju` atau `dataset/tas`) dideteksi menggunakan **YOLOv8**.
+   - Untuk **Tas**: YOLOv8 memotong area objek tas (`handbag`, `backpack`, `suitcase`) atau area pembawa tas pada objek `person`.
+   - Untuk **Baju**: YOLOv8 mendeteksi `person` dan memotong fokus area pakaian/torso sehingga latar belakang jalanan/gedung tereliminasi.
+   - Seluruh hasil potongan di-*resize* ke ukuran standar input VGG16 (**`224x224` piksel**) dan disimpan ke folder `dataset_cropped/`.
+
+2. **Pembagian Data & Augmentasi**
+   - Dataset hasil crop YOLOv8 (`dataset_cropped/`) dibagi secara seimbang menjadi **70% Training**, **15% Validation**, dan **15% Testing**.
+
+3. **Training Model Transfer Learning VGG16**
+   - Menggunakan *pre-trained* **VGG16 (ImageNet weights)** dengan *fine-tuning* pada blok konvolusi akhir (`features[24:]`) dan *Custom Classifier Head*.
+   - Menyimpan model terbaik secara otomatis ke `best_vgg16_baju.pth` dan `best_vgg16_tas.pth`.
+   - Menampilkan kurva *Loss & Accuracy*, *Confusion Matrix*, serta *Classification Report* (*Precision, Recall, F1-Score*).
+
+4. **Uji Coba Model (Inference Pipeline: YOLOv8 Crop -> VGG16 Predict -> K-Means Color)**
+   - Saat menguji foto baru, alur yang dijalankan sama persis:
+     1. Foto dideteksi dan di-*crop* menggunakan **YOLOv8** lalu diubah ukurannya menjadi **`224x224`** sesuai input model.
+     2. Potongan gambar diprediksi kelasnya oleh model **VGG16** yang telah dilatih beserta nilai *Confidence Score* (%).
+     3. Potongan objek dianalisis komposisi warna dominannya menggunakan algoritma **K-Means Clustering (`sklearn.cluster.KMeans`)** untuk menghasilkan palet warna dominan, kode **HEX (`#RRGGBB`)**, nama warna fesyen terdekat, serta persentase proporsinya.
+
+---
+
+## Model & Distribusi Kelas Dataset
 
 ### 1. Model Tas (`tas`) — Total: 380 Gambar (Distribusi Seimbang)
 - `tote_bag` (**127 gambar**): Tas jinjing santai berukuran sedang-besar
@@ -22,79 +46,27 @@ Terdapat **2 Model VGG16 Independen**, masing-masing memiliki 3 kelas target:
 
 ---
 
-## 📂 Struktur Repositori
+## Struktur Repositori
 
 ```
 fashion-trend/
-├── train_vgg16_tas.ipynb       # Notebook pelatihan model Tas (3 kelas)
-├── train_vgg16_baju.ipynb      # Notebook pelatihan model Baju (3 kelas)
+├── train_vgg16_baju.ipynb      # Notebook lengkap YOLOv8 Crop + Train VGG16 + Uji Coba & K-Means (Baju)
+├── train_vgg16_tas.ipynb       # Notebook lengkap YOLOv8 Crop + Train VGG16 + Uji Coba & K-Means (Tas)
 ├── prepare_dataset.py          # Script otomatis unduh & ekstrak dataset
 ├── labels_manifest.csv         # Data manifest label seluruh 627 foto (CSV)
 ├── labels_manifest.json        # Data manifest label seluruh 627 foto (JSON)
-├── requirements.txt            # Dependensi PyTorch, Torchvision, Scikit-learn
-└── README.md                   # Petunjuk lengkap penggunaan
+├── requirements.txt            # Dependensi PyTorch, Ultralytics YOLOv8, OpenCV, Scikit-learn
+└── README.md                   # Dokumentasi lengkap penggunaan
 ```
 
 ---
 
-## 🚀 Panduan Menjalankan di Komputer Lokal / Google Colab
+## Cara Menjalankan di Lokal / Google Colab
 
-### 1. Kloning Repositori
 ```bash
 git clone https://github.com/BismaYoga/fashion-trend.git
 cd fashion-trend
-```
-
-### 2. Pasang Dependensi
-Pastikan lingkungan Python Anda (disarankan menggunakan virtualenv atau Conda) telah terpasang:
-```bash
 pip install -r requirements.txt
-```
-
-> **Catatan Pengguna GPU (NVIDIA):**  
-> Jika memiliki GPU NVIDIA, pastikan PyTorch terpasang dengan dukungan CUDA untuk performa pelatihan yang jauh lebih cepat (Notebook mendeteksi CUDA secara otomatis).
-
-### 3. Unduh & Siapkan Dataset
-Jalankan script helper untuk menarik dataset gambar yang sudah terorganisir per folder kelas:
-```bash
-python prepare_dataset.py
-```
-*(Atau jika script di atas dijalankan di dalam notebook, cell ke-3 akan mengunduh dan mengekstrak dataset secara otomatis).*
-
-Dataset terlabeli juga dapat diunduh manual melalui portal berikut:
-- **Direct Download ZIP:** [http://202.10.47.34/slides/dataset_fashion_labeled.zip](http://202.10.47.34/slides/dataset_fashion_labeled.zip) *(221 MB)*
-- **Halaman Portal:** [http://202.10.47.34/slides/download.html](http://202.10.47.34/slides/download.html)
-
-### 4. Jalankan Pelatihan Model
-Buka Jupyter Notebook atau VS Code:
-```bash
 jupyter notebook
 ```
-- Buka `train_vgg16_tas.ipynb` untuk melatih model klasifikasi tas.
-- Buka `train_vgg16_baju.ipynb` untuk melatih model klasifikasi baju.
-- Jalankan seluruh cell dari atas ke bawah (*Run All*).
-
----
-
-## 🧠 Arsitektur Transfer Learning VGG-16
-
-1. **Backbone:** Pre-trained VGG-16 (ImageNet weights) dengan layer konvolusi yang dibekukan (*frozen feature extraction*) untuk mempertahankan representasi visual dasar.
-2. **Classifier Head:**
-   - `Linear(25088 -> 1024)` + `BatchNorm1d` + `ReLU` + `Dropout(0.5)`
-   - `Linear(1024 -> 512)` + `BatchNorm1d` + `ReLU` + `Dropout(0.4)`
-   - `Linear(512 -> 3)` (Output probabilitas untuk 3 kelas target)
-3. **Optimasi & Regularisasi:**
-   - Loss Function: `CrossEntropyLoss`
-   - Optimizer: `AdamW` (learning rate: `1e-4`, weight decay: `1e-3`)
-   - Scheduler: `ReduceLROnPlateau` (otomatis menurunkan learning rate jika validation loss stagnan)
-   - Checkpoint: Menyimpan bobot terbaik (`best_vgg16_tas.pth` / `best_vgg16_baju.pth`) berdasarkan performa validation accuracy tertinggi.
-
----
-
-## 📊 Metrik Evaluasi
-
-Sesuai dengan perancangan pada **Bab 3.4 Proposal Final Project**, notebook menghasilkan:
-- **Akurasi Global (Overall Accuracy)**
-- **Classification Report per Kelas:** Precision, Recall, dan F1-Score
-- **Confusion Matrix Heatmap:** Untuk menganalisis distribusi kesalahan prediksi antarkelas secara visual
-- **Visualisasi Inferensi:** Uji coba prediksi pada citra baru lengkap dengan diagram tingkat kepercayaan (*confidence score*).
+Buka `train_vgg16_baju.ipynb` atau `train_vgg16_tas.ipynb`, lalu jalankan seluruh cell dari atas ke bawah (*Run All*). Pada bagian akhir notebook (Bagian 5), tersedia cell khusus `test_fashion_pipeline(...)` untuk menguji foto baru lengkap dengan deteksi YOLOv8, prediksi VGG16, dan ekstraksi warna K-Means.
